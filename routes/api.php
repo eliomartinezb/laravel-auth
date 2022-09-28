@@ -27,6 +27,6 @@ Route::get('email/verify/{id}/{hash}', [EmailVerificationController::class, 'ver
 Route::get('email/resend', [EmailVerificationController::class, 'resend'])->name('verification.resend');
 
 
-    Route::middleware(['auth:api', 'verified'])->group( function () {
+Route::middleware(['auth:api', 'verified'])->group( function () {
     Route::get('products', [ProductController::class, 'index']);
 });
