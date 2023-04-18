@@ -10,5 +10,6 @@ This is the scaffold of authorization that uses Laravel as the backend, Vue as t
 4. configure db.
    1. Create ```.env``` file 
    2. Fill information for database
-5. ```php artisan passport:install```
-6. Enjoy
+5. ```php artisan key:generate```
+6. ```php artisan passport:install```
+7. Enjoy

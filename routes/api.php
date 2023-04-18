@@ -28,5 +28,5 @@ Route::get('email/resend', [EmailVerificationController::class, 'resend'])->name
 
 
 Route::middleware(['auth:api', 'verified'])->group( function () {
-    Route::get('products', [ProductController::class, 'index']);
+    //Route::get('products', [ProductController::class, 'index']);
 });
