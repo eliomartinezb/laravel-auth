@@ -33,7 +33,7 @@ class AuthController extends BaseController
         ]);
 
         if($validator->fails()){
-            return $this->sendError('Validation Error.', (array)$validator->errors(), 500);
+            return $this->sendError('Validation Error.', (array)$validator->errors()->toJson(), 400);
         }
 
         $success = DB::transaction(function() use ($request) {
@@ -48,7 +48,7 @@ class AuthController extends BaseController
             return $success;
         });
 
-        return $this->sendResponse($success, 'User register successfully.');
+        return $this->sendResponse($success, 'User register successfully.', 201);
     }
 
     /**
@@ -60,6 +60,15 @@ class AuthController extends BaseController
     public function login(Request $request): JsonResponse
     {
         Log::info("login started");
+
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required|min:8'
+        ]);
+
+        if($validator->fails()){
+            return $this->sendError('Validation Error.', (array)$validator->errors()->toJson(), 400);
+        }
 
         if (!Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
             return $this->sendError('Unauthorised.', ['error'=>'Unauthorised']);
