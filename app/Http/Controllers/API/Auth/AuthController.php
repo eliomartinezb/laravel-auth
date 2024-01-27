@@ -92,14 +92,21 @@ class AuthController extends BaseController
         $validator = Validator::make($input, [
             'email' => "required|email"
         ]);
+
         if ($validator->fails()) {
-            return $this->sendError('Validation Error', (array)$validator->errors(), 400);
+            return $this->sendError('Validation Error', (array)$validator->errors()->toJson(), 400);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return $this->sendError('Mail is not in our records', []);
         }
 
         $response = Password::sendResetLink($input);
 
         if ($response !== Password::RESET_LINK_SENT) {
-            return $this->sendError('Oops', [], 400);
+            return $this->sendError('Oops', []);
         }
 
         $message = 'Mail send successfully';
@@ -147,7 +154,7 @@ class AuthController extends BaseController
             'password' => 'required|confirmed|min:8',
         ]);
         if ($validator->fails()) {
-            return $this->sendError('Validation Error', (array)$validator->errors(), 404);
+            return $this->sendError('Validation Error', (array)$validator->errors()->toJson(), 400);
         }
         /*
         Log::info('passwordReset reset started');
