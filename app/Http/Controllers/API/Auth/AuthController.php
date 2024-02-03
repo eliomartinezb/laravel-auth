@@ -33,7 +33,7 @@ class AuthController extends BaseController
         ]);
 
         if($validator->fails()){
-            return $this->sendError('Validation Error.', (array)$validator->errors(), 500);
+            return $this->sendError('Validation Error.', (array)$validator->errors()->toJson(), 400);
         }
 
         $success = DB::transaction(function() use ($request) {
@@ -48,7 +48,7 @@ class AuthController extends BaseController
             return $success;
         });
 
-        return $this->sendResponse($success, 'User register successfully.');
+        return $this->sendResponse($success, 'User register successfully.', 201);
     }
 
     /**
@@ -60,6 +60,15 @@ class AuthController extends BaseController
     public function login(Request $request): JsonResponse
     {
         Log::info("login started");
+
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required|min:8'
+        ]);
+
+        if($validator->fails()){
+            return $this->sendError('Validation Error.', (array)$validator->errors()->toJson(), 400);
+        }
 
         if (!Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
             return $this->sendError('Unauthorised.', ['error'=>'Unauthorised']);
@@ -83,14 +92,21 @@ class AuthController extends BaseController
         $validator = Validator::make($input, [
             'email' => "required|email"
         ]);
+
         if ($validator->fails()) {
-            return $this->sendError('Validation Error', (array)$validator->errors(), 400);
+            return $this->sendError('Validation Error', (array)$validator->errors()->toJson(), 400);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return $this->sendError('Mail is not in our records', []);
         }
 
         $response = Password::sendResetLink($input);
 
         if ($response !== Password::RESET_LINK_SENT) {
-            return $this->sendError('Oops', [], 400);
+            return $this->sendError('Oops', []);
         }
 
         $message = 'Mail send successfully';
@@ -138,7 +154,7 @@ class AuthController extends BaseController
             'password' => 'required|confirmed|min:8',
         ]);
         if ($validator->fails()) {
-            return $this->sendError('Validation Error', (array)$validator->errors(), 404);
+            return $this->sendError('Validation Error', (array)$validator->errors()->toJson(), 400);
         }
         /*
         Log::info('passwordReset reset started');
@@ -164,7 +180,7 @@ class AuthController extends BaseController
         );
 
         if ($status != Password::PASSWORD_RESET) {
-            return $this->sendError(trans($status), [], 500);
+            return $this->sendError(trans($status), [], 400);
         }
 
         Log::info('passwordReset ended');
