@@ -180,7 +180,7 @@ class AuthController extends BaseController
         );
 
         if ($status != Password::PASSWORD_RESET) {
-            return $this->sendError(trans($status), [], 500);
+            return $this->sendError(trans($status), [], 400);
         }
 
         Log::info('passwordReset ended');

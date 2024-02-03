@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\Notification;
 use function Pest\Faker\fake;
 
 it('registration bad request', function () {
@@ -139,27 +141,50 @@ it('reset password bad request', function () {
 });
 
 it('reset password bad token', function () {
-    //$user = User::factory()->create();
+    $user = User::factory()->create();
 
-    $response = $this->post('/api/reset-password', []);
+    $response = $this->post('/api/forgot-password', [
+        'email' => $user->email
+    ]);
+
+    $new_password = '12345678';
+
+    $response = $this->post('/api/reset-password', [
+        "token" => "123",
+        'email' => $user->email,
+        'password' => $new_password,
+        'password_confirmation' => $new_password
+    ]);
 
     $response->assertStatus(400);
 
     expect(json_encode($response->json(), true))
         ->json()
-        ->toHaveCount(3)
+        ->toHaveCount(2)
         ->success->toBe(false);
-})->skip();
+});
 
 it('reset password success', function () {
-    //$user = User::factory()->create();
+    Notification::fake();
 
-    $response = $this->post('/api/reset-password', []);
+    $user = User::factory()->create();
 
-    $response->assertStatus(400);
+    $this->post('/api/forgot-password', [
+        'email' => $user->email
+    ]);
 
-    expect(json_encode($response->json(), true))
-        ->json()
-        ->toHaveCount(3)
-        ->success->toBe(false);
-})->skip();
+    Notification::assertSentTo($user, ResetPassword::class, function (object $notification) use ($user) {
+        $new_password = 'testing1234';
+
+        $response = $this->post('/reset-password', [
+            'token' => $notification->token,
+            'email' => $user->email,
+            'password' => $new_password,
+            'password_confirmation' => $new_password,
+        ]);
+
+        $response->assertSessionHasNoErrors();
+
+        return true;
+    });
+});
