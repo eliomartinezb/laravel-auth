@@ -70,11 +70,11 @@ class AuthController extends BaseController
             return $this->sendError('Validation Error.', (array)$validator->errors()->toJson(), 400);
         }
 
-        if (!Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+        if (!Auth::guard('web')->attempt(['email' => $request->email, 'password' => $request->password])) {
             return $this->sendError('Unauthorised.', ['error'=>'Unauthorised']);
         }
 
-        $user = Auth::user();
+        $user = Auth::guard('web')->user();
         $success['token'] = $user->createToken('MyApp')->accessToken;
         $success['name'] = $user->name;
 
