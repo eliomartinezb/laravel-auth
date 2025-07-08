@@ -20,23 +20,20 @@ class AuthController extends BaseController
 {
     /**
      * Register api
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function register(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required',
             'email' => 'required|email|unique:users',
-            'password' => 'required|confirmed|min:8'
+            'password' => 'required|confirmed|min:8',
         ]);
 
-        if($validator->fails()){
-            return $this->sendError('Validation Error.', (array)$validator->errors()->toJson(), 400);
+        if ($validator->fails()) {
+            return $this->sendError('Validation Error.', (array) $validator->errors()->toJson(), 400);
         }
 
-        $success = DB::transaction(function() use ($request) {
+        $success = DB::transaction(function () use ($request) {
             $input = $request->all();
             $input['password'] = bcrypt($input['password']);
             $user = User::create($input);
@@ -53,25 +50,22 @@ class AuthController extends BaseController
 
     /**
      * Login api
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function login(Request $request): JsonResponse
     {
-        Log::info("login started");
+        Log::info('login started');
 
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
-            'password' => 'required|min:8'
+            'password' => 'required|min:8',
         ]);
 
-        if($validator->fails()){
-            return $this->sendError('Validation Error.', (array)$validator->errors()->toJson(), 400);
+        if ($validator->fails()) {
+            return $this->sendError('Validation Error.', (array) $validator->errors()->toJson(), 400);
         }
 
-        if (!Auth::guard('web')->attempt(['email' => $request->email, 'password' => $request->password])) {
-            return $this->sendError('Unauthorised.', ['error'=>'Unauthorised']);
+        if (! Auth::guard('web')->attempt(['email' => $request->email, 'password' => $request->password])) {
+            return $this->sendError('Unauthorised.', ['error' => 'Unauthorised']);
         }
 
         $user = Auth::guard('web')->user();
@@ -81,25 +75,21 @@ class AuthController extends BaseController
         return $this->sendResponse($success, 'User login successfully.');
     }
 
-    //START FORGOT PASSWORD
-    /**
-     * @param Request $request
-     * @return JsonResponse
-     */
+    // START FORGOT PASSWORD
     public function forgotPassword(Request $request): JsonResponse
     {
         $input = $request->only('email');
         $validator = Validator::make($input, [
-            'email' => "required|email"
+            'email' => 'required|email',
         ]);
 
         if ($validator->fails()) {
-            return $this->sendError('Validation Error', (array)$validator->errors()->toJson(), 400);
+            return $this->sendError('Validation Error', (array) $validator->errors()->toJson(), 400);
         }
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
+        if (! $user) {
             return $this->sendError('Mail is not in our records', []);
         }
 
@@ -114,36 +104,40 @@ class AuthController extends BaseController
         return $this->sendResponse([], $message);
     }
 
-    /**
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function checkResetPasswordToken($token, Request $request): JsonResponse
     {
         $input = [
-            'token' => $token
+            'token' => $token,
         ];
         $validator = Validator::make($input, [
-            'token' => "required"
+            'token' => 'required',
         ]);
         if ($validator->fails()) {
-            return $this->sendError('Validation Error', (array)$validator->errors(), 404);
+            return $this->sendError('Validation Error', (array) $validator->errors(), 404);
         }
-        $results = DB::table('password_resets')->where($input);
 
-        if ($results->count() == 0) {
+        // Verificar si existe algún token válido en la base de datos
+        // En Laravel, los tokens se almacenan hasheados, pero necesitamos verificar
+        // si el token proporcionado coincide con alguno de los hasheados
+        $tokenRecords = DB::table('password_reset_tokens')->get();
+        $tokenExists = false;
+
+        foreach ($tokenRecords as $record) {
+            if (Hash::check($token, $record->token)) {
+                $tokenExists = true;
+                break;
+            }
+        }
+
+        if (! $tokenExists) {
             return $this->sendError('DB error', []);
         }
 
-        $message = "Éxito";
+        $message = 'Éxito';
 
         return $this->sendResponse([], $message);
     }
 
-    /**
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function passwordReset(Request $request): JsonResponse
     {
         Log::info('passwordReset started');
@@ -154,7 +148,7 @@ class AuthController extends BaseController
             'password' => 'required|confirmed|min:8',
         ]);
         if ($validator->fails()) {
-            return $this->sendError('Validation Error', (array)$validator->errors()->toJson(), 400);
+            return $this->sendError('Validation Error', (array) $validator->errors()->toJson(), 400);
         }
         /*
         Log::info('passwordReset reset started');
@@ -169,14 +163,14 @@ class AuthController extends BaseController
         */
 
         $status = Password::reset($input, function ($user, $password) {
-                $user->forceFill([
-                    'password' => Hash::make($password)
-                ])->setRememberToken(Str::random(60));
+            $user->forceFill([
+                'password' => Hash::make($password),
+            ])->setRememberToken(Str::random(60));
 
-                $user->save();
+            $user->save();
 
-                event(new PasswordReset($user));
-            }
+            event(new PasswordReset($user));
+        }
         );
 
         if ($status != Password::PASSWORD_RESET) {
@@ -184,6 +178,7 @@ class AuthController extends BaseController
         }
 
         Log::info('passwordReset ended');
+
         return $this->sendResponse([], 'Password reset successfully');
     }
 }
