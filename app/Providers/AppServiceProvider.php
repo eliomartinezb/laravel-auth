@@ -23,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        // Passport configuration for Laravel 12
+        // UUID support is handled by the migration and model configuration
     }
 }

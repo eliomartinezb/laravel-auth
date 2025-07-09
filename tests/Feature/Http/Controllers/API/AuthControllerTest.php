@@ -383,3 +383,12 @@ it('password reset triggers password reset event', function () {
         return true;
     });
 });
+
+it('passport client uses uuid format', function () {
+    // Verificar que el cliente creado en TestCase usa formato UUID
+    $client = \Laravel\Passport\Client::first();
+
+    expect($client)->not->toBeNull();
+    expect($client->id)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i');
+    expect($client->name)->toBe('Test Personal Access Client');
+});
